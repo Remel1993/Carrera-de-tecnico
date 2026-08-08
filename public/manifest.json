@@ -1,0 +1,11 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "hub-competicion.vercel",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "hub-competicion.vercel",
+  "start_url": "/",
+  "theme_color": "#07111f"
+}
