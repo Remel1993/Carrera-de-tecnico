@@ -938,6 +938,134 @@ const Shield = ({ color1, color2, initial, size = 'md', isFlag = false }) => {
   );
 };
 
+/* ─────────────── Historial de Campeones y Récords ─────────────── */
+
+export interface ChampionRecord {
+  season: number;
+  champion: {
+    id: any; name: string; pts: number; gf: number; ga: number;
+    color1?: string; color2?: string; isFlag?: boolean;
+  };
+  runnerUp: { id: any; name: string; pts: number } | null;
+  records: {
+    topScoring: { name: string; value: number };
+    bestDefense: { name: string; value: number };
+    bestGoalDiff: { name: string; value: number };
+    mostWins: { name: string; value: number };
+  };
+}
+
+const leaderBy = (teams: any[], pick: (t: any) => number, mode: 'max' | 'min' = 'max') => {
+  if (!Array.isArray(teams) || !teams.length) return { name: '—', value: 0 };
+  const best = teams.reduce((acc, t) =>
+    mode === 'max' ? (pick(t) > pick(acc) ? t : acc) : (pick(t) < pick(acc) ? t : acc)
+  , teams[0]);
+  return { name: best?.name || '—', value: pick(best) || 0 };
+};
+
+// Construye el resumen (campeón + récords) de una división concreta
+const buildSeasonRecord = (teams: any[], currentSeason: number): ChampionRecord | null => {
+  if (!Array.isArray(teams) || teams.length < 2) return null;
+  const table = [...teams].sort(
+    (a, b) => (b.pts || 0) - (a.pts || 0)
+      || ((b.gf || 0) - (b.ga || 0)) - ((a.gf || 0) - (a.ga || 0))
+      || (b.gf || 0) - (a.gf || 0)
+  );
+  const [champ, second] = table;
+  if (!champ) return null;
+
+  return {
+    season: currentSeason,
+    champion: {
+      id: champ.id, name: champ.name, pts: champ.pts || 0,
+      gf: champ.gf || 0, ga: champ.ga || 0,
+      color1: champ.color1, color2: champ.color2, isFlag: champ.isFlag
+    },
+    runnerUp: second ? { id: second.id, name: second.name, pts: second.pts || 0 } : null,
+    records: {
+      topScoring: leaderBy(teams, t => t.gf || 0, 'max'),
+      bestDefense: leaderBy(teams, t => t.ga || 0, 'min'),
+      bestGoalDiff: leaderBy(teams, t => (t.gf || 0) - (t.ga || 0), 'max'),
+      mostWins: leaderBy(teams, t => t.w || 0, 'max')
+    }
+  };
+};
+
+const pushRecord = (record: ChampionRecord | null, history?: ChampionRecord[]) =>
+  record ? [record, ...(history || [])].slice(0, 10) : (history || []);
+
+// Registra el resumen de la temporada de AMBAS divisiones y devuelve la liga actualizada
+const registerSeasonSummary = (comp: any, currentSeason: number) => {
+  if (!comp) return comp;
+  const r1 = buildSeasonRecord(comp.teams, currentSeason);
+  const r2 = buildSeasonRecord(comp.teams2, currentSeason);
+  if (!r1 && !r2) return comp;
+  return {
+    ...comp,
+    championsHistory: pushRecord(r1, comp.championsHistory),
+    championsHistory2: pushRecord(r2, comp.championsHistory2)
+  };
+};
+
+const ChampionsHistoryModal = ({ championsHistory = [], onClose, title = 'Palmarés' }: { championsHistory?: ChampionRecord[]; onClose?: () => void; title?: string }) => (
+  <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3' onClick={onClose}>
+    <div onClick={e => e.stopPropagation()} className='w-full max-w-md bg-slate-900 border border-amber-400/30 rounded-[1.75rem] shadow-2xl overflow-hidden'>
+      <div className='flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-gradient-to-r from-amber-500/20 to-transparent'>
+        <div className='flex min-w-0 items-center gap-2'>
+          <Trophy size={16} className='shrink-0 text-amber-400' />
+          <h3 className='truncate text-sm font-black uppercase italic text-amber-300'>{title}</h3>
+        </div>
+        {onClose && (
+          <button onClick={onClose} className='shrink-0 text-[9px] font-black uppercase tracking-widest text-slate-300 bg-white/10 px-3 py-1.5 rounded-lg active:scale-95'>Cerrar</button>
+        )}
+      </div>
+
+      <div className='max-h-[70vh] overflow-y-auto p-3 space-y-2.5'>
+        {!championsHistory.length ? (
+          <p className='py-10 text-center text-[11px] font-bold italic text-slate-500'>
+            El palmarés está esperando a su primer campeón.
+          </p>
+        ) : championsHistory.map((r, i) => (
+          <div key={`${r.season}-${i}`} className='rounded-2xl border border-amber-400/20 bg-slate-950/70 p-3'>
+            <div className='grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3'>
+              <Shield color1={r.champion.color1} color2={r.champion.color2} initial={r.champion.name} size='sm' isFlag={r.champion.isFlag} />
+              <div className='min-w-0'>
+                <p className='text-[8px] font-black uppercase tracking-widest text-amber-400'>Temporada {r.season}</p>
+                <p className='truncate text-[13px] font-black uppercase italic text-white'>{r.champion.name}</p>
+                {r.runnerUp && (
+                  <p className='truncate text-[9px] font-bold text-slate-400'>2º {r.runnerUp.name} · {r.runnerUp.pts} pts</p>
+                )}
+              </div>
+              <span className='shrink-0 rounded-lg border border-amber-400/30 bg-amber-500/15 px-2 py-1 text-[10px] font-black text-amber-300'>{r.champion.pts} PTS</span>
+            </div>
+
+            <div className='mt-2.5 grid grid-cols-2 gap-2'>
+              <div className='rounded-xl bg-white/5 px-2 py-1.5'>
+                <p className='text-[7px] font-black uppercase tracking-widest text-slate-400'>Máx. goleador (equipo)</p>
+                <p className='truncate text-[10px] font-black text-emerald-400'>{r.records.topScoring.name} · {r.records.topScoring.value} GF</p>
+              </div>
+              <div className='rounded-xl bg-white/5 px-2 py-1.5'>
+                <p className='text-[7px] font-black uppercase tracking-widest text-slate-400'>Mejor defensa</p>
+                <p className='truncate text-[10px] font-black text-sky-400'>{r.records.bestDefense.name} · {r.records.bestDefense.value} GC</p>
+              </div>
+              <div className='rounded-xl bg-white/5 px-2 py-1.5'>
+                <p className='text-[7px] font-black uppercase tracking-widest text-slate-400'>Mejor DG</p>
+                <p className='truncate text-[10px] font-black text-amber-300'>{r.records.bestGoalDiff.name} · {r.records.bestGoalDiff.value > 0 ? '+' : ''}{r.records.bestGoalDiff.value}</p>
+              </div>
+              <div className='rounded-xl bg-white/5 px-2 py-1.5'>
+                <p className='text-[7px] font-black uppercase tracking-widest text-slate-400'>Más victorias</p>
+                <p className='truncate text-[10px] font-black text-fuchsia-300'>{r.records.mostWins.name} · {r.records.mostWins.value}V</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+
+
 const DieIcon = ({ value, className }) => {
   const icons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
   const Icon = icons[value - 1] || Dices;
@@ -2031,6 +2159,9 @@ function DiceFootballApp() {
   const [eliminatedModal, setEliminatedModal] = useState<{ compId: string; phase: string } | null>(null);
   const [resetConfirmModal, setResetConfirmModal] = useState(false);
   const [showNewsModal, setShowNewsModal] = useState(false);
+  const [showChampionsHistory, setShowChampionsHistory] = useState(false);
+  const [cupAutoSim, setCupAutoSim] = useState(false);
+
 
   useEffect(() => {
     if (view !== 'hub' || compView !== 'main') window.history.pushState(null, '', window.location.href);
@@ -2108,12 +2239,14 @@ function DiceFootballApp() {
       LEAGUE_IDS.forEach(id => {
         const c = next[id];
         if (!c) return;
+        const withHistory = registerSeasonSummary(c, seasonState.season || 1);
         next[id] = {
-          ...c,
+          ...withHistory,
           previousStandings: buildStandingsSnapshot(c.teams) || c.previousStandings || null,
           previousStandings2: buildStandingsSnapshot(c.teams2) || c.previousStandings2 || null
         };
       });
+
       // Champions con las clasificaciones finales reales (participantes congelados)
       const cl = getAutoFillData('C1', next);
       if (cl) next['C1'] = { ...next['C1'], ...cl, name: next['C1']?.name || 'Champions League' };
@@ -2387,6 +2520,144 @@ function DiceFootballApp() {
     syncLeaguesToGlobal(LEAGUE_IDS.filter(id => id !== exceptId));
 
 
+  // Resuelve la ronda/jornada actual de una copa o mundial.
+  // `ms` = resultado jugado manualmente por el usuario, o null para simular TODO.
+  const processCupRound = (ms: any) => {
+    if (!activeComp || activeComp.type === 'league') return;
+       const isAutoSim = !ms && cupAutoSim;
+       // Copas y Mundiales mantienen la lógica original sin divisiones múltiples
+       // ... Lógica reducida de torneo (C1/C2) ...
+       const results: any[] = ms
+         ? [{ hId: ms.home.id, aId: ms.away.id, sh: ms.scoreH, sa: ms.scoreA, penH: ms.penalties?.scoreH, penA: ms.penalties?.scoreA }]
+         : [];
+       if (activeComp.phase === 'groups') {
+          const isWorldCup = activeCompId === 'C2';
+          const maxMatchdays = isWorldCup ? 3 : 6;
+          activeComp.groups.forEach(group => {
+             const groupTeams = activeComp.teams.filter(t => group.teamIds.includes(t.id));
+             const currentRound = generateLeagueSchedule(groupTeams, !isWorldCup)[activeComp.matchday % maxMatchdays];
+             if (currentRound) {
+                currentRound.forEach(m => {
+                   if (!ms || (m.homeId !== activeComp.userTeamId && m.awayId !== activeComp.userTeamId)) {
+                      const h = activeComp.teams.find(t => t.id === m.homeId); const a = activeComp.teams.find(t => t.id === m.awayId);
+                      let sh = 0, sa = 0;
+                      for(let i=0; i<h.opp; i++) if(Math.floor(Math.random()*6)+1 <= h.att && Math.floor(Math.random()*6)+1 > a.def) sh++;
+                      for(let i=0; i<a.opp; i++) if(Math.floor(Math.random()*6)+1 <= a.att && Math.floor(Math.random()*6)+1 > h.def) sa++;
+                      results.push({ hId: m.homeId, aId: m.awayId, sh, sa, penH: null, penA: null });
+                   }
+                });
+             }
+          });
+          const updatedTeams = activeComp.teams.map(t => {
+             const res = results.find(r => r.hId === t.id || r.aId === t.id);
+             if (!res) return t;
+             const isHome = res.hId === t.id;
+             const gf = isHome ? res.sh : res.sa; const ga = isHome ? res.sa : res.sh;
+             const w = gf > ga ? 1 : 0; const d = gf === ga ? 1 : 0; const l = gf < ga ? 1 : 0;
+             return { ...t, p: t.p + 1, w: t.w + w, d: t.d + d, l: t.l + l, gf: t.gf + gf, ga: t.ga + ga, pts: t.pts + (w * 3 + d) };
+          });
+          const nextMatchday = activeComp.matchday + 1;
+          const isEndOfGroups = nextMatchday >= maxMatchdays;
+          let newBracket = null;
+          if (isEndOfGroups) newBracket = generateKnockoutBrackets({ ...activeComp, teams: updatedTeams });
+           updateActiveComp({ teams: updatedTeams, history: [{ day: 'Jornada ' + nextMatchday, results }, ...activeComp.history], matchday: nextMatchday, phase: isEndOfGroups ? (newBracket.Octavos ? 'Octavos' : 'Cuartos') : 'groups', bracket: newBracket });
+
+           // Check if user's team was eliminated in group stage
+           if (isEndOfGroups) {
+             const userTeamId = activeComp.userTeamId;
+             const userGroup = activeComp.groups.find(g => g.teamIds.includes(userTeamId));
+             if (userGroup) {
+               const groupTeams = updatedTeams.filter(t => userGroup.teamIds.includes(t.id)).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+               const userPos = groupTeams.findIndex(t => t.id === userTeamId);
+               if (userPos >= 2) {
+                 if (isAutoSim) {
+                   // En "Simular Todo" no interrumpimos: adoptamos automáticamente un clasificado
+                   const qualified = activeComp.groups.flatMap(g => {
+                     const gt = updatedTeams.filter(t => g.teamIds.includes(t.id)).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+                     return gt.slice(0, 2).map(t => t.id);
+                   }).filter(id => id !== userTeamId);
+                   if (qualified.length) updateActiveComp({ userTeamId: qualified[Math.floor(Math.random() * qualified.length)] });
+                 } else {
+                   setTimeout(() => setEliminatedModal({ compId: activeCompId, phase: 'Fase de Grupos' }), 500);
+                 }
+               }
+             }
+           }
+
+       } else {
+          // Eliminatorias
+          const isChampions = activeCompId === 'C1';
+          const phase = activeComp.phase;
+          const isVuelta = isChampions && activeComp.matchday % 2 !== 0 && phase !== 'Final';
+          const newBracket = { ...activeComp.bracket };
+          const matchesToProcess = Array.isArray(newBracket[phase]) ? newBracket[phase] : [newBracket[phase]];
+          const allResults = [];
+
+          matchesToProcess.forEach(m => {
+             let sh, sa, penH, penA;
+             if (ms && m.hId === ms.home.id && m.aId === ms.away.id) { sh = ms.scoreH; sa = ms.scoreA; penH = ms.penalties?.scoreH; penA = ms.penalties?.scoreA; } 
+             else if (ms && isVuelta && m.hId === ms.away.id && m.aId === ms.home.id) { sh = ms.scoreA; sa = ms.scoreH; penH = ms.penalties?.scoreA; penA = ms.penalties?.scoreH; } 
+             else {
+                const h = activeComp.teams.find(t => t.id === (isVuelta ? m.aId : m.hId)); const a = activeComp.teams.find(t => t.id === (isVuelta ? m.hId : m.aId));
+                let simH = 0, simA = 0;
+                for(let i=0; i<h.opp; i++) if(Math.floor(Math.random()*6)+1 <= h.att && Math.floor(Math.random()*6)+1 > a.def) simH++;
+                for(let i=0; i<a.opp; i++) if(Math.floor(Math.random()*6)+1 <= a.att && Math.floor(Math.random()*6)+1 > h.def) simA++;
+                if (isVuelta) { sh = simA; sa = simH; } else { sh = simH; sa = simA; }
+                const isDraw = (isChampions && isVuelta && phase !== 'Final') ? (m.sh + sh === m.sa + sa) : (sh === sa);
+                if (isDraw && (!isChampions || isVuelta || phase === 'Final')) {
+                   let spH=0, spA=0, shH=0, shA=0;
+                   const sim = (att, def) => (Math.floor(Math.random()*6)+1 <= att && Math.floor(Math.random()*6)+1 > def);
+                   for(let i=0; i<5; i++){
+                      if(sim(h.att, a.def)) spH++; shH++;
+                      if(spH > spA + (5-shA) || spA > spH + (5-shH)) break;
+                      if(sim(a.att, h.def)) spA++; shA++;
+                      if(spH > spA + (5-shA) || spA > spH + (5-shH)) break;
+                   }
+                   while(spH===spA){ if(sim(h.att, a.def)) spH++; if(sim(a.att, h.def)) spA++; }
+                   penH = spH; penA = spA;
+                }
+             }
+             if (isVuelta) { m.sh2 = sh; m.sa2 = sa; } else { m.sh = sh; m.sa = sa; }
+             if (penH !== undefined) { m.penH = penH; m.penA = penA; }
+             allResults.push(isVuelta ? { hId: m.aId, aId: m.hId, sh: sa, sa: sh, penH: penA, penA: penH } : { hId: m.hId, aId: m.aId, sh, sa, penH, penA });
+          });
+
+          let nextPhase = phase, showWinner = false;
+          if (!isChampions || isVuelta || phase === 'Final') {
+             const winners = matchesToProcess.map(m => {
+                const tH = isChampions && phase!=='Final' ? m.sh+m.sh2 : m.sh; const tA = isChampions && phase!=='Final' ? m.sa+m.sa2 : m.sa;
+                if(tH>tA) return m.hId; if(tA>tH) return m.aId; return m.penH>m.penA ? m.hId : m.aId;
+             });
+             if (phase === 'Octavos') { nextPhase = 'Cuartos'; newBracket.Cuartos = Array(4).fill(0).map((_, i) => ({ id: 'C'+(i+1), hId: winners[i*2], aId: winners[i*2+1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null })); } 
+             else if (phase === 'Cuartos') { nextPhase = 'Semis'; newBracket.Semis = Array(2).fill(0).map((_, i) => ({ id: 'S'+(i+1), hId: winners[i*2], aId: winners[i*2+1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null })); } 
+             else if (phase === 'Semis') { nextPhase = 'Final'; newBracket.Final = [{ id: 'F1', hId: winners[0], aId: winners[1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null }]; } 
+             else { nextPhase = 'Terminado'; showWinner = true; }
+          }
+           const updatedComp = { history: [{ day: phase + (isChampions ? (isVuelta ? ' (Vuelta)' : ' (Ida)') : ''), results: allResults }, ...activeComp.history], matchday: activeComp.matchday + 1, phase: nextPhase, bracket: newBracket, showWinner };
+           updateActiveComp(updatedComp);
+           if (showWinner) archiveCompetition(activeCompId, 1);
+
+           // Check if user's team was eliminated in knockout
+           if (!isChampions || isVuelta || phase === 'Final') {
+             const userTeamId = activeComp.userTeamId;
+             const winners = matchesToProcess.map(m => {
+               const tH = isChampions && phase!=='Final' ? m.sh+m.sh2 : m.sh; const tA = isChampions && phase!=='Final' ? m.sa+m.sa2 : m.sa;
+               if(tH>tA) return m.hId; if(tA>tH) return m.aId; return m.penH>m.penA ? m.hId : m.aId;
+             });
+             const wasInThisRound = matchesToProcess.some(m => m.hId === userTeamId || m.aId === userTeamId);
+             const userAdvanced = winners.includes(userTeamId);
+            if (wasInThisRound && !userAdvanced && !showWinner) {
+               if (isAutoSim) {
+                 const alive = winners.filter(id => id !== userTeamId);
+                 if (alive.length) updateActiveComp({ userTeamId: alive[Math.floor(Math.random() * alive.length)] });
+               } else {
+                 setTimeout(() => setEliminatedModal({ compId: activeCompId, phase }), 500);
+               }
+             }
+           }
+       }
+  };
+
   const processMatchday = () => {
     if (activeComp.type === 'league') {
       const isDiv2Context = matchState.isDiv2Context;
@@ -2467,123 +2738,20 @@ function DiceFootballApp() {
 
 
     } else {
-       // Copas y Mundiales mantienen la lógica original sin divisiones múltiples
-       // ... Lógica reducida de torneo (C1/C2) ...
-       const results = [{ hId: matchState.home.id, aId: matchState.away.id, sh: matchState.scoreH, sa: matchState.scoreA, penH: matchState.penalties?.scoreH, penA: matchState.penalties?.scoreA }];
-       if (activeComp.phase === 'groups') {
-          const isWorldCup = activeCompId === 'C2';
-          const maxMatchdays = isWorldCup ? 3 : 6;
-          activeComp.groups.forEach(group => {
-             const groupTeams = activeComp.teams.filter(t => group.teamIds.includes(t.id));
-             const currentRound = generateLeagueSchedule(groupTeams, !isWorldCup)[activeComp.matchday % maxMatchdays];
-             if (currentRound) {
-                currentRound.forEach(m => {
-                   if (m.homeId !== activeComp.userTeamId && m.awayId !== activeComp.userTeamId) {
-                      const h = activeComp.teams.find(t => t.id === m.homeId); const a = activeComp.teams.find(t => t.id === m.awayId);
-                      let sh = 0, sa = 0;
-                      for(let i=0; i<h.opp; i++) if(Math.floor(Math.random()*6)+1 <= h.att && Math.floor(Math.random()*6)+1 > a.def) sh++;
-                      for(let i=0; i<a.opp; i++) if(Math.floor(Math.random()*6)+1 <= a.att && Math.floor(Math.random()*6)+1 > h.def) sa++;
-                      results.push({ hId: m.homeId, aId: m.awayId, sh, sa, penH: null, penA: null });
-                   }
-                });
-             }
-          });
-          const updatedTeams = activeComp.teams.map(t => {
-             const res = results.find(r => r.hId === t.id || r.aId === t.id);
-             if (!res) return t;
-             const isHome = res.hId === t.id;
-             const gf = isHome ? res.sh : res.sa; const ga = isHome ? res.sa : res.sh;
-             const w = gf > ga ? 1 : 0; const d = gf === ga ? 1 : 0; const l = gf < ga ? 1 : 0;
-             return { ...t, p: t.p + 1, w: t.w + w, d: t.d + d, l: t.l + l, gf: t.gf + gf, ga: t.ga + ga, pts: t.pts + (w * 3 + d) };
-          });
-          const nextMatchday = activeComp.matchday + 1;
-          const isEndOfGroups = nextMatchday >= maxMatchdays;
-          let newBracket = null;
-          if (isEndOfGroups) newBracket = generateKnockoutBrackets({ ...activeComp, teams: updatedTeams });
-           updateActiveComp({ teams: updatedTeams, history: [{ day: 'Jornada ' + nextMatchday, results }, ...activeComp.history], matchday: nextMatchday, phase: isEndOfGroups ? (newBracket.Octavos ? 'Octavos' : 'Cuartos') : 'groups', bracket: newBracket });
-
-           // Check if user's team was eliminated in group stage
-           if (isEndOfGroups) {
-             const userTeamId = activeComp.userTeamId;
-             const userGroup = activeComp.groups.find(g => g.teamIds.includes(userTeamId));
-             if (userGroup) {
-               const groupTeams = updatedTeams.filter(t => userGroup.teamIds.includes(t.id)).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
-               const userPos = groupTeams.findIndex(t => t.id === userTeamId);
-               if (userPos >= 2) {
-                 setTimeout(() => setEliminatedModal({ compId: activeCompId, phase: 'Fase de Grupos' }), 500);
-               }
-             }
-           }
-       } else {
-          // Eliminatorias
-          const isChampions = activeCompId === 'C1';
-          const phase = activeComp.phase;
-          const isVuelta = isChampions && activeComp.matchday % 2 !== 0 && phase !== 'Final';
-          const newBracket = { ...activeComp.bracket };
-          const matchesToProcess = Array.isArray(newBracket[phase]) ? newBracket[phase] : [newBracket[phase]];
-          const allResults = [];
-
-          matchesToProcess.forEach(m => {
-             let sh, sa, penH, penA;
-             if (m.hId === matchState.home.id && m.aId === matchState.away.id) { sh = matchState.scoreH; sa = matchState.scoreA; penH = matchState.penalties?.scoreH; penA = matchState.penalties?.scoreA; } 
-             else if (isVuelta && m.hId === matchState.away.id && m.aId === matchState.home.id) { sh = matchState.scoreA; sa = matchState.scoreH; penH = matchState.penalties?.scoreA; penA = matchState.penalties?.scoreH; } 
-             else {
-                const h = activeComp.teams.find(t => t.id === (isVuelta ? m.aId : m.hId)); const a = activeComp.teams.find(t => t.id === (isVuelta ? m.hId : m.aId));
-                let simH = 0, simA = 0;
-                for(let i=0; i<h.opp; i++) if(Math.floor(Math.random()*6)+1 <= h.att && Math.floor(Math.random()*6)+1 > a.def) simH++;
-                for(let i=0; i<a.opp; i++) if(Math.floor(Math.random()*6)+1 <= a.att && Math.floor(Math.random()*6)+1 > h.def) simA++;
-                if (isVuelta) { sh = simA; sa = simH; } else { sh = simH; sa = simA; }
-                const isDraw = (isChampions && isVuelta && phase !== 'Final') ? (m.sh + sh === m.sa + sa) : (sh === sa);
-                if (isDraw && (!isChampions || isVuelta || phase === 'Final')) {
-                   let spH=0, spA=0, shH=0, shA=0;
-                   const sim = (att, def) => (Math.floor(Math.random()*6)+1 <= att && Math.floor(Math.random()*6)+1 > def);
-                   for(let i=0; i<5; i++){
-                      if(sim(h.att, a.def)) spH++; shH++;
-                      if(spH > spA + (5-shA) || spA > spH + (5-shH)) break;
-                      if(sim(a.att, h.def)) spA++; shA++;
-                      if(spH > spA + (5-shA) || spA > spH + (5-shH)) break;
-                   }
-                   while(spH===spA){ if(sim(h.att, a.def)) spH++; if(sim(a.att, h.def)) spA++; }
-                   penH = spH; penA = spA;
-                }
-             }
-             if (isVuelta) { m.sh2 = sh; m.sa2 = sa; } else { m.sh = sh; m.sa = sa; }
-             if (penH !== undefined) { m.penH = penH; m.penA = penA; }
-             allResults.push(isVuelta ? { hId: m.aId, aId: m.hId, sh: sa, sa: sh, penH: penA, penA: penH } : { hId: m.hId, aId: m.aId, sh, sa, penH, penA });
-          });
-
-          let nextPhase = phase, showWinner = false;
-          if (!isChampions || isVuelta || phase === 'Final') {
-             const winners = matchesToProcess.map(m => {
-                const tH = isChampions && phase!=='Final' ? m.sh+m.sh2 : m.sh; const tA = isChampions && phase!=='Final' ? m.sa+m.sa2 : m.sa;
-                if(tH>tA) return m.hId; if(tA>tH) return m.aId; return m.penH>m.penA ? m.hId : m.aId;
-             });
-             if (phase === 'Octavos') { nextPhase = 'Cuartos'; newBracket.Cuartos = Array(4).fill(0).map((_, i) => ({ id: 'C'+(i+1), hId: winners[i*2], aId: winners[i*2+1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null })); } 
-             else if (phase === 'Cuartos') { nextPhase = 'Semis'; newBracket.Semis = Array(2).fill(0).map((_, i) => ({ id: 'S'+(i+1), hId: winners[i*2], aId: winners[i*2+1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null })); } 
-             else if (phase === 'Semis') { nextPhase = 'Final'; newBracket.Final = [{ id: 'F1', hId: winners[0], aId: winners[1], sh: null, sa: null, penH: null, penA: null, sh2: null, sa2: null }]; } 
-             else { nextPhase = 'Terminado'; showWinner = true; }
-          }
-           const updatedComp = { history: [{ day: phase + (isChampions ? (isVuelta ? ' (Vuelta)' : ' (Ida)') : ''), results: allResults }, ...activeComp.history], matchday: activeComp.matchday + 1, phase: nextPhase, bracket: newBracket, showWinner };
-           updateActiveComp(updatedComp);
-           if (showWinner) archiveCompetition(activeCompId, 1);
-
-           // Check if user's team was eliminated in knockout
-           if (!isChampions || isVuelta || phase === 'Final') {
-             const userTeamId = activeComp.userTeamId;
-             const winners = matchesToProcess.map(m => {
-               const tH = isChampions && phase!=='Final' ? m.sh+m.sh2 : m.sh; const tA = isChampions && phase!=='Final' ? m.sa+m.sa2 : m.sa;
-               if(tH>tA) return m.hId; if(tA>tH) return m.aId; return m.penH>m.penA ? m.hId : m.aId;
-             });
-             const wasInThisRound = matchesToProcess.some(m => m.hId === userTeamId || m.aId === userTeamId);
-             const userAdvanced = winners.includes(userTeamId);
-             if (wasInThisRound && !userAdvanced && !showWinner) {
-               setTimeout(() => setEliminatedModal({ compId: activeCompId, phase }), 500);
-             }
-           }
-       }
+       processCupRound(matchState);
     }
     setCompView('main');
   };
+
+  // Simulación automática de copas/mundiales hasta el campeón
+  useEffect(() => {
+    if (!cupAutoSim) return;
+    if (!activeComp || activeComp.type === 'league') { setCupAutoSim(false); return; }
+    if (activeComp.showWinner || activeComp.phase === 'Terminado') { setCupAutoSim(false); return; }
+    if (compView !== 'main') return;
+    const t = setTimeout(() => processCupRound(null), 420);
+    return () => clearTimeout(t);
+  }, [cupAutoSim, activeComp, compView]);
 
   const handlePromotionAndNewSeason = () => {
     if (activeComp.type !== 'league') return;
@@ -2623,7 +2791,13 @@ function DiceFootballApp() {
     const nextTeams1 = [...remaining1, ...adjustedPromoted.map(resetStats)];
     const nextTeams2 = [...remaining2, ...boostedRelegated.map(resetStats)];
 
+    const seasonNow = seasonState.season || 1;
+    const rec1 = buildSeasonRecord(activeComp.teams, seasonNow);
+    const rec2 = buildSeasonRecord(activeComp.teams2, seasonNow);
+
     updateActiveComp({
+      championsHistory: pushRecord(rec1, activeComp.championsHistory),
+      championsHistory2: pushRecord(rec2, activeComp.championsHistory2),
       // Guardamos la tabla final terminada como "anterior competición" (una sola, reemplaza a la previa)
       previousStandings: buildStandingsSnapshot(activeComp.teams),
       previousStandings2: buildStandingsSnapshot(activeComp.teams2),
@@ -2898,7 +3072,16 @@ function DiceFootballApp() {
           )}
         </AnimatePresence>
 
+        {showChampionsHistory && (
+          <ChampionsHistoryModal
+            championsHistory={(viewDiv === 2 ? activeComp?.championsHistory2 : activeComp?.championsHistory) || []}
+            title={`Palmarés · ${activeComp?.name || 'Liga'} · ${viewDiv === 2 ? '2ª' : '1ª'} Div.`}
+            onClose={() => setShowChampionsHistory(false)}
+          />
+        )}
+
         {/* NEWS MODAL */}
+
         <AnimatePresence>
           {showNewsModal && (() => {
             const currentMd = isDiv2 ? (activeComp.matchday2 || 0) : (activeComp.matchday || 0);
@@ -3431,7 +3614,13 @@ function DiceFootballApp() {
 
         {isLeague && (
           <section className='bg-slate-900/30 backdrop-blur-md rounded-[2rem] p-4 border border-white/10 mb-6 shadow-lg'>
-            <h3 className='text-[10px] font-black uppercase text-slate-200 mb-3 flex items-center gap-2 drop-shadow-md'><BarChart3 size={12} /> Top Clasificación {isDiv2 ? '2ª' : '1ª'} Div.</h3>
+            <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 mb-3'>
+              <h3 className='truncate text-[10px] font-black uppercase text-slate-200 flex items-center gap-2 drop-shadow-md'><BarChart3 size={12} /> Top Clasificación {isDiv2 ? '2ª' : '1ª'} Div.</h3>
+              <button onClick={() => setShowChampionsHistory(true)} className='shrink-0 flex items-center gap-1.5 rounded-xl border border-amber-400/30 bg-amber-500/15 px-2.5 py-1.5 text-[8px] font-black uppercase tracking-widest text-amber-300 active:scale-95'>
+                <Trophy size={11}/> Palmarés
+              </button>
+            </div>
+
             <div className='space-y-1.5'>
               {sortedTeams.slice(0, 6).map((t, i) => (
                 <div key={t.id} className={'flex items-center gap-3 p-2 rounded-xl ' + (t.id === activeComp.userTeamId ? 'bg-blue-600/40 border border-blue-400/50 shadow-inner' : (isDiv2 && i < 3 ? 'bg-emerald-900/30 border border-emerald-500/20' : 'bg-black/30'))}>
@@ -3496,6 +3685,23 @@ function DiceFootballApp() {
                   <button onClick={() => simulateLeagueToGlobal(activeCompId)} className='w-full bg-slate-900/60 border border-white/15 text-slate-100 py-3 rounded-2xl text-[10px] font-black uppercase italic tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2'>
                     <Dices size={14}/> Simular Jornada {currentMatchday + 1}
                   </button>
+                )}
+                {!isLeague && (
+                  <div className='grid grid-cols-2 gap-2'>
+                    <button
+                      onClick={() => processCupRound(null)}
+                      disabled={cupAutoSim}
+                      className='bg-slate-900/60 border border-white/15 text-slate-100 py-3 rounded-2xl text-[9px] font-black uppercase italic tracking-widest active:scale-95 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40'
+                    >
+                      <Dices size={14}/> Simular {activeComp.phase === 'groups' ? 'Jornada' : 'Ronda'}
+                    </button>
+                    <button
+                      onClick={() => setCupAutoSim(v => !v)}
+                      className={'py-3 rounded-2xl text-[9px] font-black uppercase italic tracking-widest active:scale-95 transition-all flex items-center justify-center gap-1.5 border ' + (cupAutoSim ? 'bg-red-600/80 border-red-300/40 text-white' : 'bg-amber-500/90 border-amber-300/40 text-slate-950')}
+                    >
+                      {cupAutoSim ? (<><X size={14}/> Detener</>) : (<><Wand2 size={14}/> Simular Todo</>)}
+                    </button>
+                  </div>
                 )}
                 </div>
               );
