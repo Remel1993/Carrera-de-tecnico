@@ -866,6 +866,37 @@ const getCountryCode = (name) => {
   return COUNTRY_CODES[name.toLowerCase().trim()] || null;
 };
 
+// Últimos 5 partidos de un equipo (más antiguo -> más reciente)
+const getLast5 = (teamId: any, history: any[]) => {
+  if (!Array.isArray(history) || !history.length) return [];
+  const out: string[] = [];
+  for (let i = history.length - 1; i >= 0 && out.length < 5; i--) {
+    const res = history[i]?.results?.find((r: any) => r.hId === teamId || r.aId === teamId);
+    if (!res || res.sh == null || res.sa == null) continue;
+    const isHome = res.hId === teamId;
+    const gf = isHome ? res.sh : res.sa;
+    const ga = isHome ? res.sa : res.sh;
+    out.unshift(gf > ga ? 'W' : gf === ga ? 'D' : 'L');
+  }
+  return out;
+};
+
+const FormBadges = ({ form }: { form: string[] }) => {
+  if (!form.length) return <span className='text-[9px] font-bold text-slate-600'>—</span>;
+  return (
+    <div className='flex items-center justify-center gap-1'>
+      {form.map((r, i) => (
+        <span
+          key={i}
+          title={r === 'W' ? 'Victoria' : r === 'D' ? 'Empate' : 'Derrota'}
+          className={`w-4 h-4 rounded-md flex items-center justify-center text-[7px] font-black text-white ${r === 'W' ? 'bg-emerald-500' : r === 'D' ? 'bg-slate-500' : 'bg-red-500'}`}
+        >{r === 'W' ? 'V' : r === 'D' ? 'E' : 'D'}</span>
+      ))}
+    </div>
+  );
+};
+
+
 const Shield = ({ color1, color2, initial, size = 'md', isFlag = false }) => {
   const dims = size === 'lg' ? 'w-20 h-24' : size === 'sm' ? 'w-8 h-10' : size === 'xs' ? 'w-5 h-6' : 'w-12 h-14';
   const imgDims = size === 'lg' ? 'w-20 h-14' : size === 'sm' ? 'w-8 h-6' : size === 'xs' ? 'w-5 h-4' : 'w-12 h-8';
@@ -3502,13 +3533,13 @@ function DiceFootballApp() {
           (standingsView === 'previous' && !((isDiv2 ? activeComp.previousStandings2 : activeComp.previousStandings) || []).length) ? null :
           <div className='bg-slate-900/30 backdrop-blur-md rounded-[2rem] border border-white/10 overflow-x-auto custom-scrollbar relative shadow-xl'>
 
-            <table className='w-full text-left border-collapse min-w-[550px]'>
+            <table className='w-full text-left border-collapse min-w-[680px]'>
               <thead className='bg-[#0f172a] sticky top-0 z-50 shadow-md'>
                 <tr className='text-[8px] font-black uppercase italic text-slate-400'>
                   <th className='p-3 sticky z-50 bg-[#0f172a]' style={{ left: 0, minWidth: '40px' }}>Pos</th>
                   <th className='p-3 sticky z-50 bg-[#0f172a]' style={{ left: '40px', minWidth: '130px' }}>Equipo</th>
                   <th className='p-3 sticky z-50 bg-[#0f172a] text-center border-r border-white/10' style={{ left: '170px', minWidth: '40px' }}>PJ</th>
-                  <th className='p-3 text-center'>G</th><th className='p-3 text-center'>E</th><th className='p-3 text-center'>P</th><th className='p-3 text-center'>GF</th><th className='p-3 text-center'>GC</th><th className='p-3 text-center'>DG</th><th className='p-3 text-center text-emerald-400'>Pts</th>
+                  <th className='p-3 text-center'>G</th><th className='p-3 text-center'>E</th><th className='p-3 text-center'>P</th><th className='p-3 text-center'>GF</th><th className='p-3 text-center'>GC</th><th className='p-3 text-center'>DG</th><th className='p-3 text-center text-emerald-400'>Pts</th><th className='p-3 text-center' style={{ minWidth: '120px' }}>Últ. 5</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-white/5'>
@@ -3526,7 +3557,7 @@ function DiceFootballApp() {
                       <td className={'p-3 text-[10px] font-black italic sticky z-40 bg-[#0f172a] ' + (isPromo ? 'text-emerald-400' : isRelegation ? 'text-red-400' : 'text-slate-300')} style={{ left: 0 }}>{i+1}</td>
                       <td className='p-3 flex items-center gap-2 sticky z-40 bg-[#0f172a]' style={{ left: '40px', minWidth: '130px' }}><Shield color1={t?.color1} color2={t?.color2} initial={t?.name} size='xs' isFlag={t?.isFlag} /><span className='text-[10px] font-bold uppercase truncate italic max-w-[80px]'>{t?.name}</span></td>
                       <td className='p-3 text-center text-[10px] font-bold sticky z-40 bg-[#0f172a] border-r border-white/10' style={{ left: '170px' }}>{t.p}</td>
-                      <td className='p-3 text-center text-[10px] font-bold'>{t.w}</td><td className='p-3 text-center text-[10px] font-bold'>{t.d}</td><td className='p-3 text-center text-[10px] font-bold'>{t.l}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf}</td><td className='p-3 text-center text-[10px] font-bold'>{t.ga}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf - t.ga}</td><td className='p-3 text-center text-[10px] font-black text-emerald-400'>{t.pts}</td>
+                      <td className='p-3 text-center text-[10px] font-bold'>{t.w}</td><td className='p-3 text-center text-[10px] font-bold'>{t.d}</td><td className='p-3 text-center text-[10px] font-bold'>{t.l}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf}</td><td className='p-3 text-center text-[10px] font-bold'>{t.ga}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf - t.ga}</td><td className='p-3 text-center text-[10px] font-black text-emerald-400'>{t.pts}</td><td className='p-3'><FormBadges form={standingsView === 'previous' ? [] : getLast5(t.id, currentHistory)} /></td>
                     </tr>
                   )
                 });
@@ -3541,13 +3572,13 @@ function DiceFootballApp() {
             {(activeComp.groups || []).map((group, gi) => (
               <div key={gi} className='bg-slate-900/30 backdrop-blur-md rounded-[2rem] border border-white/10 overflow-x-auto custom-scrollbar relative shadow-xl'>
                 <div className='bg-[#0f172a] p-3 border-b border-white/10 sticky left-0 z-50'><h3 className='text-[10px] font-black uppercase text-blue-400 flex items-center gap-2'><ShieldIcon size={12} /> {group.name}</h3></div>
-                <table className='w-full text-left border-collapse min-w-[550px]'>
+                <table className='w-full text-left border-collapse min-w-[680px]'>
                   <thead className='bg-[#0f172a] sticky top-0 z-50'>
                     <tr className='text-[8px] font-black uppercase italic text-slate-400'>
                       <th className='p-3 sticky z-50 bg-[#0f172a]' style={{ left: 0, minWidth: '40px' }}>Pos</th>
                       <th className='p-3 sticky z-50 bg-[#0f172a]' style={{ left: '40px', minWidth: '130px' }}>Equipo</th>
                       <th className='p-3 sticky z-50 bg-[#0f172a] text-center border-r border-white/10' style={{ left: '170px', minWidth: '40px' }}>PJ</th>
-                      <th className='p-3 text-center'>G</th><th className='p-3 text-center'>E</th><th className='p-3 text-center'>P</th><th className='p-3 text-center'>GF</th><th className='p-3 text-center'>GC</th><th className='p-3 text-center'>DG</th><th className='p-3 text-center text-emerald-400'>Pts</th>
+                      <th className='p-3 text-center'>G</th><th className='p-3 text-center'>E</th><th className='p-3 text-center'>P</th><th className='p-3 text-center'>GF</th><th className='p-3 text-center'>GC</th><th className='p-3 text-center'>DG</th><th className='p-3 text-center text-emerald-400'>Pts</th><th className='p-3 text-center' style={{ minWidth: '120px' }}>Últ. 5</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-white/5'>
@@ -3556,7 +3587,7 @@ function DiceFootballApp() {
                         <td className='p-3 text-[10px] font-black italic text-slate-300 sticky z-40 bg-[#0f172a]' style={{ left: 0 }}>{i+1}</td>
                         <td className='p-3 flex items-center gap-2 sticky z-40 bg-[#0f172a]' style={{ left: '40px', minWidth: '130px' }}><Shield color1={t?.color1} color2={t?.color2} initial={t?.name} size='xs' isFlag={t?.isFlag} /><span className='text-[10px] font-bold uppercase truncate italic max-w-[80px]'>{t?.name}</span></td>
                         <td className='p-3 text-center text-[10px] font-bold sticky z-40 bg-[#0f172a] border-r border-white/10' style={{ left: '170px' }}>{t.p}</td>
-                        <td className='p-3 text-center text-[10px] font-bold'>{t.w}</td><td className='p-3 text-center text-[10px] font-bold'>{t.d}</td><td className='p-3 text-center text-[10px] font-bold'>{t.l}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf}</td><td className='p-3 text-center text-[10px] font-bold'>{t.ga}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf - t.ga}</td><td className='p-3 text-center text-[10px] font-black text-emerald-400'>{t.pts}</td>
+                        <td className='p-3 text-center text-[10px] font-bold'>{t.w}</td><td className='p-3 text-center text-[10px] font-bold'>{t.d}</td><td className='p-3 text-center text-[10px] font-bold'>{t.l}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf}</td><td className='p-3 text-center text-[10px] font-bold'>{t.ga}</td><td className='p-3 text-center text-[10px] font-bold'>{t.gf - t.ga}</td><td className='p-3 text-center text-[10px] font-black text-emerald-400'>{t.pts}</td><td className='p-3'><FormBadges form={getLast5(t.id, currentHistory)} /></td>
                       </tr>
                     ))}
                   </tbody>
