@@ -866,20 +866,34 @@ const getCountryCode = (name) => {
   return COUNTRY_CODES[name.toLowerCase().trim()] || null;
 };
 
-// Últimos 5 partidos de un equipo (más antiguo -> más reciente)
+// Últimos 5 partidos de un equipo (más antiguo -> más reciente).
+// El historial se guarda con la jornada más reciente al inicio del array.
 const getLast5 = (teamId: any, history: any[]) => {
   if (!Array.isArray(history) || !history.length) return [];
   const out: string[] = [];
-  for (let i = history.length - 1; i >= 0 && out.length < 5; i--) {
-    const res = history[i]?.results?.find((r: any) => r.hId === teamId || r.aId === teamId);
-    if (!res || res.sh == null || res.sa == null) continue;
-    const isHome = res.hId === teamId;
-    const gf = isHome ? res.sh : res.sa;
-    const ga = isHome ? res.sa : res.sh;
-    out.unshift(gf > ga ? 'W' : gf === ga ? 'D' : 'L');
+  for (let i = 0; i < history.length && out.length < 5; i++) {
+    const dayResults = history[i]?.results;
+    if (!Array.isArray(dayResults)) continue;
+    // Puede haber más de un partido del equipo en la misma entrada (ida/vuelta)
+    const matches = dayResults.filter((r: any) => r && (r.hId === teamId || r.aId === teamId));
+    for (let j = matches.length - 1; j >= 0 && out.length < 5; j--) {
+      const res = matches[j];
+      if (res.sh == null || res.sa == null) continue;
+      const isHome = res.hId === teamId;
+      const gf = isHome ? res.sh : res.sa;
+      const ga = isHome ? res.sa : res.sh;
+      let r = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
+      if (gf === ga && res.penH != null && res.penA != null) {
+        const pf = isHome ? res.penH : res.penA;
+        const pa = isHome ? res.penA : res.penH;
+        if (pf !== pa) r = pf > pa ? 'W' : 'L';
+      }
+      out.push(r);
+    }
   }
-  return out;
+  return out.reverse();
 };
+
 
 const FormBadges = ({ form }: { form: string[] }) => {
   if (!form.length) return <span className='text-[9px] font-bold text-slate-600'>—</span>;
