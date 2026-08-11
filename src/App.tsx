@@ -13,6 +13,10 @@ import {
   Newspaper, TrendingUp, AlertCircle, Flame, Star, X, Megaphone, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from '@tanstack/react-router';
+import { registerTitle, registerTitles } from '@/lib/palmares';
+import { getCountryCode } from '@/lib/countries';
+import TopWinnersTable from '@/components/TopWinnersTable';
 
 // ==========================================
 // 1. CONSTANTES DEL SISTEMA Y PRESETS
@@ -804,67 +808,6 @@ const generateLeagueSchedule = (teams, twoLegged = true) => {
 // 3. COMPONENTES ATÓMICOS
 // ==========================================
 // [Se mantienen intactos]
-const COUNTRY_CODES = {
-  'afghanistan': 'af', 'afganistán': 'af', 'albania': 'al', 'algeria': 'dz', 'argelia': 'dz',
-  'andorra': 'ad', 'angola': 'ao', 'argentina': 'ar', 'armenia': 'am', 'australia': 'au',
-  'austria': 'at', 'azerbaijan': 'az', 'azerbaiyán': 'az', 'bahrain': 'bh', 'baréin': 'bh',
-  'bangladesh': 'bd', 'belarus': 'by', 'bielorrusia': 'by', 'belgium': 'be', 'bélgica': 'be',
-  'benin': 'bj', 'bénin': 'bj', 'bolivia': 'bo', 'bosnia': 'ba', 'botswana': 'bw',
-  'brazil': 'br', 'brasil': 'br', 'bulgaria': 'bg', 'burkina faso': 'bf', 'burundi': 'bi',
-  'cambodia': 'kh', 'camboya': 'kh', 'cameroon': 'cm', 'camerún': 'cm', 'canada': 'ca',
-  'canadá': 'ca', 'cape verde': 'cv', 'cabo verde': 'cv', 'central african republic': 'cf',
-  'chad': 'td', 'chile': 'cl', 'china': 'cn', 'colombia': 'co', 'congo': 'cg',
-  'dr congo': 'cd', 'rep dem congo': 'cd', 'costa rica': 'cr', 'croatia': 'hr',
-  'croacia': 'hr', 'cuba': 'cu', 'cyprus': 'cy', 'chipre': 'cy', 'czech republic': 'cz',
-  'czechia': 'cz', 'rep checa': 'cz', 'república checa': 'cz', 'denmark': 'dk',
-  'dinamarca': 'dk', 'djibouti': 'dj', 'dominican republic': 'do', 'rep dominicana': 'do',
-  'ecuador': 'ec', 'egypt': 'eg', 'egipto': 'eg', 'el salvador': 'sv', 'england': 'gb-eng',
-  'inglaterra': 'gb-eng', 'equatorial guinea': 'gq', 'guinea ecuatorial': 'gq',
-  'eritrea': 'er', 'estonia': 'ee', 'ethiopia': 'et', 'etiopía': 'et', 'finland': 'fi',
-  'finlandia': 'fi', 'france': 'fr', 'francia': 'fr', 'gabon': 'ga', 'gambia': 'gm',
-  'georgia': 'ge', 'germany': 'de', 'alemania': 'de', 'ghana': 'gh', 'greece': 'gr',
-  'grecia': 'gr', 'guatemala': 'gt', 'guinea': 'gn', 'guinea-bissau': 'gw',
-  'guinea bissau': 'gw', 'haiti': 'ht', 'haití': 'ht', 'honduras': 'hn', 'hungary': 'hu',
-  'hungría': 'hu', 'iceland': 'is', 'islandia': 'is', 'india': 'in', 'indonesia': 'id',
-  'iran': 'ir', 'irán': 'ir', 'iraq': 'iq', 'irak': 'iq', 'ireland': 'ie', 'irlanda': 'ie',
-  'israel': 'il', 'italy': 'it', 'italia': 'it', 'ivory coast': 'ci', 'costa de marfil': 'ci',
-  'jamaica': 'jm', 'japan': 'jp', 'japón': 'jp', 'jordan': 'jo', 'jordania': 'jo',
-  'kazakhstan': 'kz', 'kazajistán': 'kz', 'kenya': 'ke', 'kenia': 'ke', 'kuwait': 'kw',
-  'kyrgyzstan': 'kg', 'laos': 'la', 'latvia': 'lv', 'letonia': 'lv', 'lebanon': 'lb',
-  'líbano': 'lb', 'lesotho': 'ls', 'liberia': 'lr', 'libya': 'ly', 'libia': 'ly',
-  'liechtenstein': 'li', 'lithuania': 'lt', 'lituania': 'lt', 'luxembourg': 'lu',
-  'luxemburgo': 'lu', 'madagascar': 'mg', 'malawi': 'mw', 'malaysia': 'my', 'malasia': 'my',
-  'maldives': 'mv', 'mali': 'ml', 'malta': 'mt', 'mauritania': 'mr', 'mauritius': 'mu',
-  'mexico': 'mx', 'méxico': 'mx', 'moldova': 'md', 'mongolia': 'mn', 'montenegro': 'me',
-  'morocco': 'ma', 'marruecos': 'ma', 'mozambique': 'mz', 'myanmar': 'mm', 'namibia': 'na',
-  'nepal': 'np', 'netherlands': 'nl', 'holanda': 'nl', 'países bajos': 'nl', 'new zealand': 'nz',
-  'nueva zelanda': 'nz', 'nicaragua': 'ni', 'niger': 'ne', 'nigeria': 'ng', 'north korea': 'kp',
-  'corea del norte': 'kp', 'north macedonia': 'mk', 'macedonia': 'mk', 'norway': 'no',
-  'noruega': 'no', 'oman': 'om', 'omán': 'om', 'pakistan': 'pk', 'panamá': 'pa', 'panama': 'pa',
-  'papua new guinea': 'pg', 'paraguay': 'py', 'peru': 'pe', 'perú': 'pe', 'philippines': 'ph',
-  'filipinas': 'ph', 'poland': 'pl', 'polonia': 'pl', 'portugal': 'pt', 'qatar': 'qa',
-  'romania': 'ro', 'rumanía': 'ro', 'russia': 'ru', 'rusia': 'ru', 'rwanda': 'rw',
-  'saudi arabia': 'sa', 'arabia saudita': 'sa', 'arabia saudí': 'sa', 'scotland': 'gb-sct',
-  'escocia': 'gb-sct', 'senegal': 'sn', 'serbia': 'rs', 'sierra leone': 'sl',
-  'singapore': 'sg', 'singapur': 'sg', 'slovakia': 'sk', 'eslovaquia': 'sk',
-  'slovenia': 'si', 'eslovenia': 'si', 'somalia': 'so', 'south africa': 'za',
-  'sudáfrica': 'za', 'south korea': 'kr', 'corea del sur': 'kr', 'spain': 'es', 'españa': 'es',
-  'sri lanka': 'lk', 'sudan': 'sd', 'sudán': 'sd', 'sweden': 'se', 'suecia': 'se',
-  'switzerland': 'ch', 'suiza': 'ch', 'syria': 'sy', 'siria': 'sy', 'taiwan': 'tw',
-  'tajikistan': 'tj', 'tanzania': 'tz', 'thailand': 'th', 'tailandia': 'th', 'togo': 'tg',
-  'trinidad': 'tt', 'trinidad and tobago': 'tt', 'trinidad y tobago': 'tt', 'tunisia': 'tn',
-  'túnez': 'tn', 'turkey': 'tr', 'turquía': 'tr', 'turkmenistan': 'tm', 'uganda': 'ug',
-  'ukraine': 'ua', 'ucrania': 'ua', 'uae': 'ae', 'emiratos árabes': 'ae',
-  'emiratos arabes unidos': 'ae', 'united arab emirates': 'ae', 'united states': 'us',
-  'usa': 'us', 'estados unidos': 'us', 'uruguay': 'uy', 'uzbekistan': 'uz', 'venezuela': 've',
-  'vietnam': 'vn', 'wales': 'gb-wls', 'gales': 'gb-wls', 'yemen': 'ye', 'zambia': 'zm',
-  'zimbabwe': 'zw',
-};
-
-const getCountryCode = (name) => {
-  if (!name) return null;
-  return COUNTRY_CODES[name.toLowerCase().trim()] || null;
-};
 
 // Últimos 5 partidos de un equipo (más antiguo -> más reciente).
 // El historial se guarda con la jornada más reciente al inicio del array.
@@ -1021,7 +964,11 @@ const registerSeasonSummary = (comp: any, currentSeason: number) => {
   };
 };
 
-const ChampionsHistoryModal = ({ championsHistory = [], onClose, title = 'Palmarés' }: { championsHistory?: ChampionRecord[]; onClose?: () => void; title?: string }) => (
+const ChampionsHistoryModal = ({ championsHistory = [], onClose, title = 'Palmarés', compId = null, div = 1, showTopWinners = false }: { championsHistory?: ChampionRecord[]; onClose?: () => void; title?: string; compId?: string | null; div?: number; showTopWinners?: boolean }) => {
+  const [tab, setTab] = useState<'history' | 'winners'>('history');
+  const canShowWinners = showTopWinners && div === 1 && !!compId;
+
+  return (
   <div className='fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3' onClick={onClose}>
     <div onClick={e => e.stopPropagation()} className='w-full max-w-md bg-slate-900 border border-amber-400/30 rounded-[1.75rem] shadow-2xl overflow-hidden'>
       <div className='flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10 bg-gradient-to-r from-amber-500/20 to-transparent'>
@@ -1034,6 +981,22 @@ const ChampionsHistoryModal = ({ championsHistory = [], onClose, title = 'Palmar
         )}
       </div>
 
+      {canShowWinners && (
+        <div className='grid grid-cols-2 gap-2 px-3 pt-3'>
+          <button onClick={() => setTab('history')} className={`rounded-xl border px-2 py-2 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all ${tab === 'history' ? 'border-amber-400/40 bg-amber-500/20 text-amber-200' : 'border-white/10 bg-white/5 text-slate-400'}`}>
+            Últimos 10 campeones
+          </button>
+          <button onClick={() => setTab('winners')} className={`flex items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all ${tab === 'winners' ? 'border-amber-400/40 bg-amber-500/20 text-amber-200' : 'border-white/10 bg-white/5 text-slate-400'}`}>
+            <Star size={10} className={tab === 'winners' ? 'fill-amber-400 text-amber-400' : ''} /> Máximos ganadores
+          </button>
+        </div>
+      )}
+
+      {canShowWinners && tab === 'winners' ? (
+        <div className='max-h-[70vh] overflow-y-auto p-3'>
+          <TopWinnersTable compId={compId as string} div={div} records={championsHistory} emptyLabel='Aún no se ha ganado ningún título en esta liga.' />
+        </div>
+      ) : (
       <div className='max-h-[70vh] overflow-y-auto p-3 space-y-2.5'>
         {!championsHistory.length ? (
           <p className='py-10 text-center text-[11px] font-bold italic text-slate-500'>
@@ -1074,9 +1037,11 @@ const ChampionsHistoryModal = ({ championsHistory = [], onClose, title = 'Palmar
           </div>
         ))}
       </div>
+      )}
     </div>
   </div>
-);
+  );
+};
 
 
 
@@ -1135,7 +1100,7 @@ const MenuButton = ({ icon, label, onClick, disabled = false, isDanger = false, 
 // ==========================================
 const pick = (arr: any[]) => arr[Math.floor(Math.random() * arr.length)];
 
-const generateNews = (teams: any[], teams2: any[], matchday: number, compType: string, compName: string, history?: any[], schedule?: any[][]) => {
+const generateNews = (teams: any[], teams2: any[], matchday: number, compType: string, compName: string, history?: any[], schedule?: any[][], cupPhase?: string) => {
   if (!teams || teams.length === 0) return [];
 
   const sorted = [...teams].sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
@@ -1153,28 +1118,139 @@ const generateNews = (teams: any[], teams2: any[], matchday: number, compType: s
     news.push(item);
   };
 
-  // Helper: calcular rachas desde historial
+  // Helper: calcular rachas desde historial.
+  // OJO: history[0] es la jornada MÁS RECIENTE (se hace unshift al simular).
+  const resultFor = (teamId: number, day: any) => {
+    const res = day?.results?.find((r: any) => r.hId === teamId || r.aId === teamId);
+    if (!res || res.sh === null || res.sh === undefined || res.sa === null || res.sa === undefined) return null;
+    const isHome = res.hId === teamId;
+    const gf = isHome ? res.sh : res.sa;
+    const ga = isHome ? res.sa : res.sh;
+    return { res, isHome, gf, ga, outcome: gf > ga ? 'W' : gf === ga ? 'D' : 'L' };
+  };
+
   const getStreak = (teamId: number) => {
     if (!history || history.length === 0) return { type: 'none', count: 0, results: '' };
-    let streak = '';
-    let streakType = '';
-    let streakCount = 0;
-    // Iterar de más reciente a más antiguo para obtener la racha ACTUAL
-    for (let i = history.length - 1; i >= 0; i--) {
-      const day = history[i];
-      const res = day.results?.find((r: any) => r.hId === teamId || r.aId === teamId);
-      if (!res) continue;
-      const isHome = res.hId === teamId;
-      const gf = isHome ? res.sh : res.sa;
-      const ga = isHome ? res.sa : res.sh;
-      const result = gf > ga ? 'W' : gf === ga ? 'D' : 'L';
-      streak = result + streak; // prepend para mantener orden cronológico en el string
-      if (streakCount === 0) { streakType = result; streakCount = 1; }
-      else if (result === streakType) streakCount++;
-      else break;
+    const seq: string[] = []; // seq[0] = partido más reciente
+    for (let i = 0; i < history.length; i++) {
+      const r = resultFor(teamId, history[i]);
+      if (r) seq.push(r.outcome);
     }
-    return { type: streakType, count: streakCount, results: streak.slice(-5) };
+    if (!seq.length) return { type: 'none', count: 0, results: '' };
+    const type = seq[0];
+    let count = 1;
+    while (count < seq.length && seq[count] === type) count++;
+    // results en orden cronológico real (antiguo -> reciente), últimos 5
+    const results = seq.slice(0, 5).reverse().join('');
+    return { type, count, results };
   };
+
+  // Jornada más reciente y tabla previa a esa jornada (para detectar cambios de liderato)
+  const lastDay = history && history.length > 0 ? history[0] : null;
+  const lastDayLabel = lastDay?.day ? (typeof lastDay.day === 'number' ? `Jornada ${lastDay.day}` : String(lastDay.day)) : `Jornada ${matchday}`;
+
+  const buildPrevTable = () => {
+    if (!lastDay?.results || compType !== 'league') return null;
+    const map = new Map<number, any>();
+    teams.forEach(t => map.set(t.id, {
+      id: t.id, name: t.name, pts: t.pts || 0, gf: t.gf || 0, ga: t.ga || 0,
+      w: t.w || 0, d: t.d || 0, l: t.l || 0
+    }));
+    let touched = false;
+    for (const r of lastDay.results) {
+      const h = map.get(r.hId); const a = map.get(r.aId);
+      if (!h || !a || r.sh === null || r.sh === undefined || r.sa === null || r.sa === undefined) continue;
+      touched = true;
+      h.gf -= r.sh; h.ga -= r.sa; a.gf -= r.sa; a.ga -= r.sh;
+      if (r.sh > r.sa) { h.pts -= 3; h.w -= 1; a.l -= 1; }
+      else if (r.sa > r.sh) { a.pts -= 3; a.w -= 1; h.l -= 1; }
+      else { h.pts -= 1; a.pts -= 1; h.d -= 1; a.d -= 1; }
+    }
+    if (!touched) return null;
+    return [...map.values()].sort((x, y) => y.pts - x.pts || ((y.gf - y.ga) - (x.gf - x.ga)) || y.gf - x.gf);
+  };
+  const prevTable = buildPrevTable();
+  const prevPos = (teamId: number) => prevTable ? prevTable.findIndex(t => t.id === teamId) + 1 : 0;
+
+  // ============================================================
+  // === LO QUE PASÓ EN LA JORNADA (prioridad cronológica máxima) ===
+  // ============================================================
+  const teamById = (id: number) => teams.find(t => t.id === id) || (teams2 || []).find((t: any) => t.id === id);
+
+  if (lastDay?.results && matchday > 0) {
+    const rows = lastDay.results.filter((r: any) => r.sh !== null && r.sh !== undefined && r.sa !== null && r.sa !== undefined);
+
+    // --- ¿PERDIÓ EL LIDERATO? ---
+    if (compType === 'league' && prevTable && prevTable[0] && sorted[0] && prevTable[0].id !== sorted[0].id) {
+      const oldLeader = teamById(prevTable[0].id);
+      const newLeader = sorted[0];
+      const oldRes = resultFor(prevTable[0].id, lastDay);
+      const gap = newLeader.pts - (prevTable.find(t => t.id === prevTable[0].id)?.pts ?? 0);
+      if (oldLeader && !usedIds.has(newLeader.id)) {
+        addNews({
+          title: `🚨 ¡CAMBIO DE LÍDER! ${newLeader.name} destrona al ${oldLeader.name}`,
+          desc: `${lastDayLabel}: ${oldLeader.name} pierde el liderato que tenía y ${newLeader.name} se sienta en el trono con ${newLeader.pts} pts.${oldRes ? (oldRes.outcome === 'L' ? ` El ex-líder cayó ${oldRes.gf}-${oldRes.ga} y lo pagó carísimo.` : oldRes.outcome === 'D' ? ` Un empate (${oldRes.gf}-${oldRes.ga}) le costó la punta de la tabla.` : '') : ''} ${gap > 0 ? `Ahora manda por ${gap} punto(s).` : 'Se manda por diferencia de goles: liga al milímetro.'}`,
+          team: newLeader, type: 'leadChange'
+        });
+        addNews({
+          title: `😨 ${oldLeader.name} se queda sin liderato`,
+          desc: `${lastDayLabel}: el que mandaba ya no manda. ${oldLeader.name} baja al puesto ${sorted.findIndex(t => t.id === oldLeader.id) + 1} y tendrá que remar desde atrás. ${phase === 'final' ? 'Perder la punta a estas alturas puede ser definitivo.' : 'Hay tiempo para recuperarla, pero el golpe es duro.'}`,
+          team: oldLeader, type: 'leaderFall'
+        });
+      }
+    }
+
+    // --- EL PRIMER LUGAR HA PERDIDO (aunque siga líder) ---
+    const leaderIdForCheck = prevTable?.[0]?.id ?? sorted[0]?.id;
+    const leaderTeam = leaderIdForCheck ? teamById(leaderIdForCheck) : null;
+    const leaderRes = leaderIdForCheck ? resultFor(leaderIdForCheck, lastDay) : null;
+    if (leaderTeam && leaderRes && leaderRes.outcome === 'L' && !usedIds.has(leaderTeam.id)) {
+      const rivalId = leaderRes.isHome ? leaderRes.res.aId : leaderRes.res.hId;
+      const rival = teamById(rivalId);
+      addNews({
+        title: `💥 ¡EL LÍDER CAE! ${leaderTeam.name} pierde ${leaderRes.gf}-${leaderRes.ga}${rival ? ` ante ${rival.name}` : ''}`,
+        desc: `${lastDayLabel}: el primer lugar se estrella. ${rival ? `${rival.name} dio el golpe de la fecha.` : 'Derrota inesperada.'} ${sorted[1] ? `El ${sorted[1].name} está a ${Math.max(0, sorted[0].pts - sorted[1].pts)} punto(s) y no piensa perdonar.` : ''} ${phase === 'late' || phase === 'final' ? 'A estas alturas del campeonato, estas derrotas se pagan con títulos.' : 'Aviso serio para el que va arriba.'}`,
+        team: leaderTeam, type: 'leaderFall'
+      });
+    }
+
+    // --- DERROTAS EN PARTIDOS IMPORTANTES (choques de arriba / duelos directos) ---
+    if (compType === 'league' && prevTable) {
+      const topCut = Math.max(4, Math.round(totalTeams * 0.3));
+      const bigLosses = rows.map((r: any) => {
+        if (r.sh === r.sa) return null;
+        const homeWon = r.sh > r.sa;
+        const loser = teamById(homeWon ? r.aId : r.hId);
+        const winner = teamById(homeWon ? r.hId : r.aId);
+        if (!loser || !winner) return null;
+        const pl = prevPos(loser.id); const pw = prevPos(winner.id);
+        if (!pl || !pw) return null;
+        const isTopClash = pl <= topCut && pw <= topCut;
+        const upset = pl <= topCut && pw > totalTeams - topCut;
+        if (!isTopClash && !upset) return null;
+        return { loser, winner, pl, pw, isTopClash, upset, gf: homeWon ? r.sh : r.sa, ga: homeWon ? r.sa : r.sh };
+      }).filter(Boolean) as any[];
+
+      bigLosses.sort((a, b) => (a.pl + a.pw) - (b.pl + b.pw));
+      bigLosses.slice(0, 2).forEach(m => {
+        if (usedIds.has(m.loser.id)) return;
+        const diff = m.gf - m.ga;
+        if (m.upset) {
+          addNews({
+            title: `😱 BATACAZO: ${m.loser.name} (${m.pl}º) cae ante ${m.winner.name} (${m.pw}º)`,
+            desc: `${lastDayLabel}: ${m.gf}-${m.ga}. Un tropiezo que nadie esperaba y que le puede costar la temporada al ${m.loser.name}. En el fútbol de dados no hay favoritos garantizados: el colista de hoy es el verdugo de mañana.`,
+            team: m.loser, type: 'bigLoss'
+          });
+        } else {
+          addNews({
+            title: `⚔️ DUELO DIRECTO: ${m.winner.name} gana ${m.gf}-${m.ga} y ${m.loser.name} pierde puntos de oro`,
+            desc: `${lastDayLabel}: choque entre ${m.pw}º y ${m.pl}º de la tabla. ${diff >= 3 ? '¡Y encima con goleada! Un golpe anímico brutal.' : 'Se decidió por detalles, como todos los partidos grandes.'} ${m.loser.name} deja escapar una oportunidad enorme en la pelea de arriba.`,
+            team: m.loser, type: 'bigLoss'
+          });
+        }
+      });
+    }
+  }
 
   // === LIDERATO ===
   if (sorted[0] && sorted[0].pts > 0) {
@@ -1357,8 +1433,7 @@ const generateNews = (teams: any[], teams2: any[], matchday: number, compType: s
   }
 
   // === DERBY JUGADO (revisar último partido del historial) ===
-  if (history && history.length > 0 && matchday > 0) {
-    const lastDay = history[history.length - 1];
+  if (lastDay && matchday > 0) {
     if (lastDay?.results) {
       for (const res of lastDay.results) {
         const hTeam = sorted.find(t => t.id === res.hId);
@@ -1480,7 +1555,7 @@ const generateNews = (teams: any[], teams2: any[], matchday: number, compType: s
   // === CAMBIO DE LÍDER / PÉRDIDA DE LIDERAZGO ===
   if (history && history.length >= 2 && matchday >= 2 && compType === 'league') {
     // Reconstruir la tabla de la jornada anterior para detectar cambio de líder
-    const prevDay = history[history.length - 1];
+    const prevDay = lastDay;
     if (prevDay?.results) {
       // Simulamos: si el líder actual perdió o empató en la última jornada, puede haber habido cambio
       const leaderStreak = getStreak(sorted[0].id);
@@ -1568,48 +1643,102 @@ const generateNews = (teams: any[], teams2: any[], matchday: number, compType: s
 
 
   if (compType !== 'league' && matchday > 0) {
-    const rTeam = pick(sorted.filter(t => !usedIds.has(t.id))) || pick(sorted);
-    const isFinal = matchday >= 6;
-    const isSemis = matchday >= 4 && matchday < 6;
-    const isQuarters = matchday >= 3 && matchday < 4;
+    const roundLabel = (ph?: string) => ph === 'groups' ? 'Fase de grupos'
+      : ph === 'Octavos' ? 'Octavos de final'
+      : ph === 'Cuartos' ? 'Cuartos de final'
+      : ph === 'Semis' ? 'Semifinales'
+      : ph === 'Final' ? 'La Gran Final'
+      : 'la eliminatoria';
+    const playedLabel = lastDayLabel; // ronda que se acaba de jugar
+    const nextLabel = roundLabel(cupPhase); // ronda vigente ahora mismo
 
-    if (isFinal) {
-      addNews({ ...pick([
-        { title: `🏆 ¡LA GRAN FINAL DE LA ${compName.toUpperCase()}!`, desc: `¡Solo quedan dos! Después de semanas de eliminatorias, cruces imposibles y remontadas, llegamos al momento supremo. Quien gane, escribirá su nombre en letras de oro. Quien pierda, se quedará con el "casi". ¡La presión es MÁXIMA!` },
-        { title: `👑 FINAL: El momento que todos esperaban`, desc: `La ${compName} llega a su punto culminante. Todo lo que se ha jugado hasta ahora cobra sentido en este partido. Sin mañana, sin excusas. ¡ES LA FINAL!` },
-      ]), team: rTeam, type: 'generic' });
-    } else if (isSemis) {
-      addNews({ ...pick([
-        { title: `⚡ SEMIFINALES: La ${compName} arde`, desc: `¡Cuatro equipos, dos plazas para la final! Cada minuto cuenta, cada error puede ser letal. Los que llegaron hasta aquí se lo han ganado, pero solo los mejores darán el último paso.` },
-        { title: `🔥 ¡SEMIS! La ${compName} se pone al rojo vivo`, desc: `A un paso de la final. Las semifinales son donde se forjan las leyendas o se rompen los sueños. No hay margen para fallar. El que tiemble, pierde.` },
-      ]), team: rTeam, type: 'generic' });
-    } else if (isQuarters) {
-      addNews({ ...pick([
-        { title: `🏟️ CUARTOS DE FINAL: La ${compName} se estrecha`, desc: `Ocho pretendientes, pero solo cuatro seguirán adelante. Los cuartos de final son donde se separa a los buenos de los grandes. ¿Habrá sorpresas o mandarán los favoritos?` },
-        { title: `⚔️ Cuartos: Arranca lo bueno en la ${compName}`, desc: `A partir de aquí, cada partido es una final. No hay red de seguridad. Ganar o morir. La copa no perdona.` },
-      ]), team: rTeam, type: 'generic' });
-    } else {
-      addNews({ ...pick([
-        { title: `🏟️ La ${compName} toma forma — Jornada ${matchday}`, desc: `${matchday <= 2 ? 'Las primeras rondas dejan entrever quién viene con hambre y quién no está preparado para la presión de la copa.' : 'El torneo avanza y los cruces se ponen cada vez más interesantes. Los favoritos aprietan pero las sorpresas acechan.'}` },
-        { title: `🌍 Crónica de la ${compName} — Fase ${matchday}`, desc: `${matchday <= 2 ? 'Primeros compases de una competición que promete emociones fuertes. Los dados decidirán quién avanza.' : 'La copa no perdona: aquí no hay Liga que te salve. Un mal día y a casa. Esa es la magia del torneo.'}` },
-      ]), team: rTeam, type: 'generic' });
-    }
-
-    // Noticia extra de eliminatoria: equipo grande que podría caer
-    if (matchday >= 2) {
-      const bigTeamsInCup = sorted.filter(t => !usedIds.has(t.id) && (t.att >= 4 || t.opp >= 4));
-      const struggling = bigTeamsInCup.filter(t => {
-        const s = getStreak(t.id);
-        return s.type === 'L' || s.type === 'D' || (t.w || 0) < (t.l || 0);
-      });
-      if (struggling.length > 0) {
-        const team = pick(struggling);
+    // --- CRÓNICA DE LA RONDA QUE SE ACABA DE JUGAR ---
+    const rows = (lastDay?.results || []).filter((r: any) => r.sh !== null && r.sh !== undefined && r.sa !== null && r.sa !== undefined);
+    if (rows.length) {
+      // Partido más goleador de la jornada
+      const topGame = [...rows].sort((a: any, b: any) => ((b.sh + b.sa) - (a.sh + a.sa)))[0];
+      const tgH = teamById(topGame.hId); const tgA = teamById(topGame.aId);
+      if (tgH && tgA) {
         addNews({
-          title: `⚠️ ¿Campanada? ${team.name} tambalea en la ${compName}`,
-          desc: `Un grande que no está en su mejor momento. En liga se puede remontar, pero en copa cada eliminatoria es una sentencia. ${team.name} necesita reaccionar o veremos una de las grandes sorpresas del torneo.`,
-          team, type: 'crisis'
+          title: `🎯 ${playedLabel}: ${tgH.name} ${topGame.sh}-${topGame.sa} ${tgA.name}`,
+          desc: `El partido de la jornada en la ${compName}. ${(topGame.sh + topGame.sa) >= 5 ? '¡Festival de goles y los dados ardiendo!' : 'Partido cerrado, resuelto por detalles mínimos.'} ${topGame.penH !== null && topGame.penH !== undefined ? `Se decidió en los penaltis (${topGame.penH}-${topGame.penA}): drama puro desde los once metros.` : ''}`,
+          team: topGame.sh >= topGame.sa ? tgH : tgA, type: 'cupRound'
         });
       }
+
+      // Tanda de penaltis / agonía
+      const penGame = rows.find((r: any) => r.penH !== null && r.penH !== undefined && r.id !== topGame.id);
+      if (penGame) {
+        const pH = teamById(penGame.hId); const pA = teamById(penGame.aId);
+        const penWinner = penGame.penH > penGame.penA ? pH : pA;
+        const penLoser = penGame.penH > penGame.penA ? pA : pH;
+        if (penWinner && penLoser && !usedIds.has(penWinner.id)) {
+          addNews({
+            title: `🥶 ${penWinner.name} sobrevive en los penaltis (${penGame.penH}-${penGame.penA})`,
+            desc: `${playedLabel} de la ${compName}: ${penGame.sh}-${penGame.sa} en los 90 y todo a la lotería de los once metros. ${penLoser.name} se va a casa con la sensación de que estuvo ahí, rozándolo. Así es la copa: cruel y adictiva.`,
+            team: penWinner, type: 'cupRound'
+          });
+        }
+      }
+
+      // Goleada / paliza de la ronda
+      const thrash = [...rows].sort((a: any, b: any) => Math.abs(b.sh - b.sa) - Math.abs(a.sh - a.sa))[0];
+      if (thrash && Math.abs(thrash.sh - thrash.sa) >= 3) {
+        const wTeam = teamById(thrash.sh > thrash.sa ? thrash.hId : thrash.aId);
+        const lTeam = teamById(thrash.sh > thrash.sa ? thrash.aId : thrash.hId);
+        if (wTeam && lTeam && !usedIds.has(wTeam.id)) {
+          addNews({
+            title: `💣 Paliza en la ${compName}: ${wTeam.name} arrasa ${Math.max(thrash.sh, thrash.sa)}-${Math.min(thrash.sh, thrash.sa)} al ${lTeam.name}`,
+            desc: `${playedLabel}. Exhibición total. ${lTeam.name} no encontró la manera de frenar la avalancha y ahora toca reconstruir la moral. ${wTeam.name} manda un mensaje al resto del torneo.`,
+            team: wTeam, type: 'cupRound'
+          });
+        }
+      }
+    }
+
+    // --- QUÉ SE JUEGA AHORA MISMO ---
+    const rTeam = pick(sorted.filter(t => !usedIds.has(t.id))) || pick(sorted);
+    if (cupPhase === 'Final') {
+      addNews({ ...pick([
+        { title: `🏆 ¡AHORA SÍ: LA GRAN FINAL DE LA ${compName.toUpperCase()}!`, desc: `Solo quedan dos. Un partido, noventa minutos y una vida entera de recuerdos en juego. Quien gane escribe su nombre en letras de oro; quien pierda cargará con el "casi" toda la temporada.` },
+        { title: `👑 FINAL de la ${compName}: el partido que lo decide todo`, desc: `Todo el torneo cobra sentido aquí. Sin mañana, sin excusas, sin red de seguridad. La presión es MÁXIMA y los dados no tienen piedad.` },
+      ]), team: rTeam, type: 'cupNext' });
+    } else if (cupPhase === 'Semis') {
+      addNews({ ...pick([
+        { title: `⚡ SEMIFINALES en marcha: la ${compName} arde`, desc: `Cuatro equipos, dos billetes para la final. Aquí se forjan leyendas o se rompen sueños. El que tiemble, se queda fuera.` },
+        { title: `🔥 La ${compName} entra en semis`, desc: `A un paso de la final. Cada error puede ser letal y cada acierto, eterno. Ya no hay margen para fallar.` },
+      ]), team: rTeam, type: 'cupNext' });
+    } else if (cupPhase === 'Cuartos') {
+      addNews({ ...pick([
+        { title: `🏟️ CUARTOS DE FINAL: la ${compName} se estrecha`, desc: `Ocho pretendientes, cuatro supervivientes. Los cuartos separan a los buenos de los grandes. ¿Mandarán los favoritos o habrá campanada?` },
+        { title: `⚔️ Arranca lo bueno: cuartos de la ${compName}`, desc: `Desde aquí, cada partido es una final. Ganar o volver a casa. La copa no perdona.` },
+      ]), team: rTeam, type: 'cupNext' });
+    } else if (cupPhase === 'Octavos') {
+      addNews({ ...pick([
+        { title: `🎯 OCTAVOS DE FINAL de la ${compName}`, desc: `Terminaron los grupos y empieza la eliminación directa. Dieciséis equipos, ocho sobrevivirán. Aquí ya no hay segundas oportunidades.` },
+        { title: `🚪 Se abren los octavos en la ${compName}`, desc: `El sorteo dejó cruces de infarto. Los grandes ya no pueden esconderse: un mal día y adiós al sueño.` },
+      ]), team: rTeam, type: 'cupNext' });
+    } else {
+      addNews({ ...pick([
+        { title: `🌍 ${compName}: la fase de grupos sigue su curso`, desc: `${playedLabel} disputada y la clasificación se mueve. Cada punto acerca o aleja de los octavos; nadie puede relajarse.` },
+        { title: `📋 Grupos de la ${compName}: cuentas abiertas`, desc: `Tras ${playedLabel}, hay equipos que ya respiran y otros que empiezan a hacer cálculos desesperados.` },
+      ]), team: rTeam, type: 'cupNext' });
+    }
+
+    // --- GRANDE EN PELIGRO (según la forma reciente real) ---
+    const bigTeamsInCup = sorted.filter(t => !usedIds.has(t.id) && (t.att >= 4 || t.opp >= 4));
+    const struggling = bigTeamsInCup.filter(t => {
+      const st = getStreak(t.id);
+      return st.type === 'L' || (st.type === 'D' && st.count >= 2);
+    });
+    if (struggling.length > 0) {
+      const team = pick(struggling);
+      const st = getStreak(team.id);
+      addNews({
+        title: `⚠️ ¿Campanada a la vista? ${team.name} tambalea en la ${compName}`,
+        desc: `Viene de ${st.count} ${st.type === 'L' ? 'derrota(s)' : 'empate(s)'} y ahora le toca ${nextLabel.toLowerCase()}. En liga se remonta; en copa, cada cruce es una sentencia. Reacción o eliminación.`,
+        team, type: 'crisis'
+      });
     }
   }
 
@@ -1665,9 +1794,18 @@ const generateNews = (teams: any[], teams2: any[], matchday: number, compType: s
   }
 
   // Derbys siempre van primero, luego el resto aleatorio
-  const derbyNews = news.filter(n => n.type === 'derby');
-  const otherNews = news.filter(n => n.type !== 'derby').sort(() => Math.random() - 0.5);
-  return [...derbyNews, ...otherNews].slice(0, 8);
+  // === ORDEN CRONOLÓGICO / RELEVANCIA ===
+  // Primero lo que acaba de pasar en la jornada, después el contexto de la temporada.
+  const PRIORITY: Record<string, number> = {
+    leadChange: 0, leaderFall: 1, bigLoss: 2, cupRound: 3, derby: 4, cupNext: 5,
+    momentum: 6, rivalry: 7, leader: 8, crisis: 9, relegation: 10, promotion: 11,
+    surprise: 12, scorer: 13, stats: 14, defense: 15, luck: 16, generic: 17
+  };
+  const ordered = news
+    .map((n, i) => ({ n, i, p: PRIORITY[n.type] ?? 18 }))
+    .sort((a, b) => a.p - b.p || a.i - b.i)
+    .map(x => x.n);
+  return ordered.slice(0, 9);
 };
 
 const NewsIcon = ({ type }: { type: string }) => {
@@ -1724,7 +1862,18 @@ const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiv
     <div className='px-4 pb-8'>
       {!selectedArchiveEntry ? (
         <div className='space-y-4'>
-          <p className="text-[10px] text-slate-300 font-bold uppercase italic tracking-widest text-center mb-6 drop-shadow-md">Últimos Registros</p>
+          <p className="text-[10px] text-slate-300 font-bold uppercase italic tracking-widest text-center mb-4 drop-shadow-md">Máximos Ganadores</p>
+          <div className='grid grid-cols-2 gap-2 mb-6'>
+            <Link to='/palmares/champions' className='flex flex-col items-center gap-1.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
+              <Trophy size={18} className='text-amber-400' />
+              <span className='text-[8px] font-black uppercase italic tracking-wider text-amber-200'>Champions</span>
+            </Link>
+            <Link to='/palmares/copa' className='flex flex-col items-center gap-1.5 rounded-2xl border border-sky-400/30 bg-sky-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
+              <Globe size={18} className='text-sky-400' />
+              <span className='text-[8px] font-black uppercase italic tracking-wider text-sky-200'>Copa del Mundo</span>
+            </Link>
+          </div>
+          <p className="text-[10px] text-slate-300 font-bold uppercase italic tracking-widest text-center mb-6 drop-shadow-md">Últimos 10 Registros</p>
           {archive.length === 0 ? (
             <div className='text-center py-20 bg-slate-900/30 backdrop-blur-md rounded-3xl border border-white/10 shadow-xl'>
               <History size={48} className='mx-auto mb-4 text-slate-400' />
@@ -2218,6 +2367,35 @@ function DiceFootballApp() {
 
   useEffect(() => { try { window.localStorage.setItem(`${APP_ID}_comps`, JSON.stringify(comps)); } catch(e){} }, [comps]);
 
+  // Recupera en el registro permanente cualquier edición que todavía exista
+  // en el historial visual de una partida creada antes del palmarés acumulativo.
+  useEffect(() => {
+    const recoverableTitles = [];
+    LEAGUE_IDS.forEach(id => {
+      const comp = comps[id];
+      if (!comp) return;
+      [
+        { div: 1, records: comp.championsHistory },
+        { div: 2, records: comp.championsHistory2 }
+      ].forEach(({ div, records }) => {
+        (records || []).forEach(record => {
+          if (!record?.champion) return;
+          recoverableTitles.push({
+            compId: id,
+            compName: comp.name,
+            type: 'league',
+            div,
+            winner: record.champion,
+            season: record.season
+          });
+        });
+      });
+    });
+    registerTitles(recoverableTitles);
+    // La recuperación solo se ejecuta al cargar la partida.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const activeComp = comps[activeCompId];
   const updateActiveComp = (newData) => setComps(prev => ({ ...prev, [activeCompId]: { ...prev[activeCompId], ...newData } }));
 
@@ -2248,6 +2426,19 @@ function DiceFootballApp() {
   // Cierre de temporada global: guarda clasificaciones finales, actualiza
   // previousStandings y genera (congela) los 32 de la Champions.
   const finishGlobalSeason = () => {
+    const seasonNow = seasonState.season || 1;
+    // Palmarés acumulativo (infinito): todos los campeones se guardan en una
+    // única escritura para que un cierre interrumpido no deje ligas sin registrar.
+    const seasonTitles = [];
+    LEAGUE_IDS.forEach(id => {
+      const c = comps[id];
+      if (!c) return;
+      const r1 = buildSeasonRecord(c.teams, seasonNow);
+      const r2 = buildSeasonRecord(c.teams2, seasonNow);
+      if (r1) seasonTitles.push({ compId: id, compName: c.name, type: 'league', div: 1, winner: r1.champion, season: seasonNow });
+      if (r2) seasonTitles.push({ compId: id, compName: c.name, type: 'league', div: 2, winner: r2.champion, season: seasonNow });
+    });
+    registerTitles(seasonTitles);
     setComps(prev => {
       const next = { ...prev };
       LEAGUE_IDS.forEach(id => {
@@ -2335,7 +2526,13 @@ function DiceFootballApp() {
       id: Date.now(), compId, name: comp.name, date: new Date().toLocaleDateString(), div, winner, 
       teams: t, history: isDiv2 ? comp.history2 : comp.history, bracket: comp.bracket, groups: comp.groups, type: comp.type 
     };
-    setArchive(prev => [entry, ...prev].slice(0, 5));
+    setArchive(prev => [entry, ...prev].slice(0, 10));
+    if (winner) {
+      registerTitle({
+        compId, compName: comp.name, type: comp.type === 'league' ? 'league' : 'cup',
+        div, winner, season: seasonState?.season || 1
+      });
+    }
   };
 
   const [matchState, setMatchState] = useState(null);
@@ -3090,6 +3287,9 @@ function DiceFootballApp() {
           <ChampionsHistoryModal
             championsHistory={(viewDiv === 2 ? activeComp?.championsHistory2 : activeComp?.championsHistory) || []}
             title={`Palmarés · ${activeComp?.name || 'Liga'} · ${viewDiv === 2 ? '2ª' : '1ª'} Div.`}
+            compId={activeCompId}
+            div={viewDiv === 2 ? 2 : 1}
+            showTopWinners={activeComp?.type === 'league'}
             onClose={() => setShowChampionsHistory(false)}
           />
         )}
@@ -3109,7 +3309,8 @@ function DiceFootballApp() {
               activeComp.type,
               activeComp.name,
               currentHist,
-              currentSched
+              currentSched,
+              activeComp.phase
             );
             return (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/90 backdrop-blur-md' onClick={() => setShowNewsModal(false)}>
