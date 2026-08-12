@@ -13,7 +13,6 @@ import {
   Newspaper, TrendingUp, AlertCircle, Flame, Star, X, Megaphone, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from '@tanstack/react-router';
 import { registerTitle, registerTitles } from '@/lib/palmares';
 import { getCountryCode } from '@/lib/countries';
 import TopWinnersTable from '@/components/TopWinnersTable';
@@ -1852,8 +1851,11 @@ const PenaltyDots = ({ history }) => {
 // 4. VISTAS SECUNDARIAS (MÓDULOS DE UI)
 // ==========================================
 
-const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiveEntry }) => (
+const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiveEntry }) => {
+  const [palmaresModal, setPalmaresModal] = useState<null | { title: string; compId: string; div: number }>(null);
+  return (
   <div className='flex-grow flex flex-col'>
+
     <header className='flex items-center gap-3 mb-8 px-4'>
       <button onClick={() => selectedArchiveEntry ? setSelectedArchiveEntry(null) : setView('hub')} className='p-3 bg-slate-900/30 backdrop-blur-md rounded-2xl text-slate-300 hover:text-white active:scale-95 transition-all border border-white/10'><ChevronLeft /></button>
       <h2 className='text-xl font-black uppercase italic text-yellow-500 drop-shadow-md'>Salón de la Fama</h2>
@@ -1868,10 +1870,15 @@ const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiv
               <Trophy size={18} className='text-amber-400' />
               <span className='text-[8px] font-black uppercase italic tracking-wider text-amber-200'>Champions</span>
             </Link>
-            <Link to='/palmares/copa' className='flex flex-col items-center gap-1.5 rounded-2xl border border-sky-400/30 bg-sky-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
+                        <button onClick={() => setPalmaresModal({ title: 'Palmarés Champions', compId: 'C1', div: 1 })} className='flex flex-col items-center gap-1.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
+              <Trophy size={18} className='text-amber-400' />
+              <span className='text-[8px] font-black uppercase italic tracking-wider text-amber-200'>Champions</span>
+            </button>
+            <button onClick={() => setPalmaresModal({ title: 'Palmarés Copa del Mundo', compId: 'C2', div: 1 })} className='flex flex-col items-center gap-1.5 rounded-2xl border border-sky-400/30 bg-sky-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
               <Globe size={18} className='text-sky-400' />
               <span className='text-[8px] font-black uppercase italic tracking-wider text-sky-200'>Copa del Mundo</span>
-            </Link>
+            </button>
+
           </div>
           <p className="text-[10px] text-slate-300 font-bold uppercase italic tracking-widest text-center mb-6 drop-shadow-md">Últimos 10 Registros</p>
           {archive.length === 0 ? (
@@ -1956,12 +1963,26 @@ const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiv
             )}
           </div>
         </div>
-      )}
+            )}
     </div>
+
+    {palmaresModal && (
+      <div className='fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex flex-col p-6 overflow-y-auto custom-scrollbar' onClick={() => setPalmaresModal(null)}>
+        <div className='flex items-center justify-between mb-6 mt-4' onClick={(e) => e.stopPropagation()}>
+          <h2 className='text-xl font-black uppercase italic text-yellow-400 drop-shadow-md'>{palmaresModal.title}</h2>
+          <button onClick={() => setPalmaresModal(null)} className='p-3 bg-slate-900/30 rounded-2xl text-slate-300 hover:text-white active:scale-95 transition-all border border-white/10'><X /></button>
+        </div>
+        <div className='max-w-md mx-auto w-full' onClick={(e) => e.stopPropagation()}>
+          <TopWinnersTable compId={palmaresModal.compId} div={palmaresModal.div} emptyLabel='Todavía no hay campeones registrados.' />
+        </div>
+      </div>
+    )}
   </div>
-);
+  );
+};
 
 const RulesView = ({ setView }) => (
+
   <div className='flex-grow px-4 pb-8 flex flex-col'>
     <header className='flex items-center gap-3 mb-8'>
       <button onClick={() => setView('hub')} className='p-3 bg-slate-900/30 backdrop-blur-md rounded-2xl text-slate-300 hover:text-white active:scale-95 transition-all border border-white/10'><ChevronLeft /></button>
