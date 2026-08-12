@@ -1866,10 +1866,8 @@ const ArchiveView = ({ setView, archive, selectedArchiveEntry, setSelectedArchiv
         <div className='space-y-4'>
           <p className="text-[10px] text-slate-300 font-bold uppercase italic tracking-widest text-center mb-4 drop-shadow-md">Máximos Ganadores</p>
           <div className='grid grid-cols-2 gap-2 mb-6'>
-            <Link to='/palmares/champions' className='flex flex-col items-center gap-1.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
-              <Trophy size={18} className='text-amber-400' />
-              <span className='text-[8px] font-black uppercase italic tracking-wider text-amber-200'>Champions</span>
-            </Link>
+            <button onClick={() => setPalmaresModal({ title: 'Palmarés Champions', compId: 'C1', div: 1 })} ...>
+
                         <button onClick={() => setPalmaresModal({ title: 'Palmarés Champions', compId: 'C1', div: 1 })} className='flex flex-col items-center gap-1.5 rounded-2xl border border-amber-400/30 bg-amber-500/10 px-2 py-3 text-center active:scale-95 transition-all'>
               <Trophy size={18} className='text-amber-400' />
               <span className='text-[8px] font-black uppercase italic tracking-wider text-amber-200'>Champions</span>
