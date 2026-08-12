@@ -206,5 +206,5 @@ export const TopWinnersTable = ({
   );
 };
 
-export default TopWinnersTable; 
+export default TopWinnersTable;
  
