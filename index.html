@@ -1,13 +1,24 @@
 <!doctype html>
 <html lang="es">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#020617" />
-    <title>Dice Football</title>
+    <title>Snake - Demo</title>
+    <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <main>
+      <h1>Snake — Demo</h1>
+      <div class="top">
+        <div id="score">Puntuación: 0</div>
+        <div class="controls">
+          <button id="btn-restart">Reiniciar</button>
+          <button id="btn-pause">Pausa</button>
+        </div>
+      </div>
+      <canvas id="game" width="600" height="600"></canvas>
+      <p class="hint">Flechas / WASD para mover. P para pausar. Toca en pantalla para controles táctiles.</p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
